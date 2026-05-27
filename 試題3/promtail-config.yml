@@ -1,0 +1,61 @@
+# ============================================================
+# Grafana Promtail 設定檔
+# 版本：2.9.0
+# 角色：收集所有 Docker container 的 stdout log，推送到 Loki
+#
+# 收集方式：掛載 /var/run/docker.sock，透過 Docker API 自動
+#           偵測所有容器並抓取 log（無需修改應用程式）
+# 標籤：job="docker", container_name, service
+# ============================================================
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+# Promtail 記錄每個 log 的讀取位置，重啟後不會重複收集
+positions:
+  filename: /tmp/positions/positions.yaml   # 對應 docker-compose 掛載的永久目錄
+
+# ── 推送目標：Loki ────────────────────────────────────────────
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    # 推送失敗時的重試設定
+    backoff_config:
+      min_period:  500ms
+      max_period:  5m
+      max_retries: 10
+
+# ── Log 收集設定 ──────────────────────────────────────────────
+scrape_configs:
+
+  - job_name: docker
+
+    # 透過 Docker socket 自動發現所有容器
+    docker_sd_configs:
+      - host:             unix:///var/run/docker.sock
+        refresh_interval: 5s    # 每 5 秒掃描一次新容器
+
+    # ── 標籤轉換規則 ─────────────────────────────────────────
+    relabel_configs:
+
+      # container_name：移除開頭的 "/" (Docker 命名慣例)
+      # 結果範例："crawler"、"api"、"postgres"
+      - source_labels: [__meta_docker_container_name]
+        regex:         '/(.*)'
+        target_label:  container_name
+
+      # logstream：stdout 或 stderr
+      - source_labels: [__meta_docker_container_log_stream]
+        target_label:  logstream
+
+      # service：從 docker-compose label 取得服務名稱
+      - source_labels: [__meta_docker_container_label_com_docker_compose_service]
+        target_label:  service
+
+      # job 標籤固定為 "docker"，方便 Grafana 統一查詢
+      - target_label: job
+        replacement:  docker
+
+    # ── Pipeline：解析 Docker 包裝的 log 格式 ───────────────
+    pipeline_stages:
+      - docker: {}   # 自動解析 Docker 的 JSON log 外層格式

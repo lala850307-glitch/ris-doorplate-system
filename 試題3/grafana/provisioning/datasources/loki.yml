@@ -1,0 +1,18 @@
+# ============================================================
+# Grafana Datasource 自動設定
+# Grafana 啟動時自動載入，無需手動新增 datasource
+# ============================================================
+
+apiVersion: 1
+
+datasources:
+  - name:      Loki
+    type:      loki
+    uid:       loki              # dashboard JSON 裡的 datasource uid 要對應這個
+    access:    proxy             # Grafana server 代理查詢（不是瀏覽器直連）
+    url:       http://loki:3100
+    isDefault: true              # 設為預設 datasource
+    version:   1
+    editable:  false             # 防止在 UI 誤刪
+    jsonData:
+      maxLines: 1000             # 單次查詢最多顯示 1000 行 log

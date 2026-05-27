@@ -1,0 +1,16 @@
+# ============================================================
+# Grafana Dashboard Provider 設定
+# Grafana 啟動時自動掃描此資料夾，載入所有 .json 儀表板
+# 無需手動 import，開箱即用
+# ============================================================
+
+apiVersion: 1
+
+providers:
+  - name: default
+    folder: ""            # 放在根目錄（Home）
+    type: file
+    disableDeletion: true # 防止在 UI 誤刪
+    editable: true        # 可在 UI 修改後另存
+    options:
+      path: /etc/grafana/provisioning/dashboards/json

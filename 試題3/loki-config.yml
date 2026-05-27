@@ -1,0 +1,56 @@
+# ============================================================
+# Grafana Loki 設定檔
+# 版本：2.9.0
+# 角色：接收 Promtail 推送的 log，儲存並提供查詢
+# 資料存放：/loki/chunks（透過 docker-compose volume 持久化）
+# ============================================================
+
+auth_enabled: false   # 單機地端不需要認證
+
+server:
+  http_listen_port: 3100   # Promtail 推送 / Grafana 查詢都走這個 port
+  grpc_listen_port: 9096
+
+# ── 共用路徑前綴 ──────────────────────────────────────────────
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks   # Log 資料儲存位置
+      rules_directory:  /loki/rules
+  replication_factor: 1                # 單節點，不需要複製
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory                  # 單節點用 in-memory 即可
+
+# ── Schema 設定 ───────────────────────────────────────────────
+schema_config:
+  configs:
+    - from: 2020-10-24
+      store:        boltdb-shipper
+      object_store: filesystem
+      schema:       v11
+      index:
+        prefix: index_
+        period: 24h    # 每天一個 index 檔案
+
+# ── 查詢快取（加速重複查詢）──────────────────────────────────
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled:     true
+        max_size_mb: 100
+
+# ── 資料保留與限制 ────────────────────────────────────────────
+limits_config:
+  reject_old_samples:         true
+  reject_old_samples_max_age: 168h   # 拒絕超過 7 天的舊 log
+  ingestion_rate_mb:          16
+  ingestion_burst_size_mb:    32
+
+# ── 壓縮設定 ──────────────────────────────────────────────────
+compactor:
+  working_directory: /loki/compactor
+  shared_store:      filesystem

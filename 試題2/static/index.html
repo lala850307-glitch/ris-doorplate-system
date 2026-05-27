@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>門牌資料查詢系統</title>
+  <style>
+    /* ── Reset & Variables ─────────────────────────────────── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --green-600:  #16a34a;
+      --green-700:  #15803d;
+      --green-50:   #f0fdf4;
+      --green-100:  #dcfce7;
+      --green-200:  #bbf7d0;
+      --green-300:  #86efac;
+      --white:      #ffffff;
+      --gray-50:    #f9fafb;
+      --gray-100:   #f3f4f6;
+      --gray-200:   #e5e7eb;
+      --gray-600:   #4b5563;
+      --gray-700:   #374151;
+      --gray-900:   #111827;
+      --red-500:    #ef4444;
+      --red-50:     #fef2f2;
+    }
+    body {
+      font-family: 'Noto Sans TC', 'Segoe UI', Tahoma, sans-serif;
+      background: var(--white);
+      color: var(--gray-900);
+      line-height: 1.6;
+    }
+
+    /* ── Navbar ────────────────────────────────────────────── */
+    .navbar {
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-200);
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 4px rgba(0,0,0,.05);
+    }
+    .nav-container {
+      max-width: 1280px; margin: 0 auto;
+      padding: 0 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+      height: 70px;
+    }
+    .nav-logo { font-size: 1.4rem; font-weight: 700; color: var(--green-600); }
+    .nav-health {
+      display: flex; align-items: center; gap: .6rem;
+      font-size: .9rem; color: var(--gray-600);
+    }
+    .health-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--gray-200); transition: background .3s;
+    }
+    .health-dot.ok  { background: var(--green-600); box-shadow: 0 0 0 3px rgba(22,163,74,.15); }
+    .health-dot.err { background: var(--red-500);   box-shadow: 0 0 0 3px rgba(239,68,68,.15); }
+
+    /* ── Container ─────────────────────────────────────────── */
+    .container { max-width: 1280px; margin: 0 auto; padding: 0 2rem; }
+
+    /* ── Hero ──────────────────────────────────────────────── */
+    .hero {
+      padding: 4rem 0;
+      background: linear-gradient(135deg, var(--white) 0%, var(--green-50) 50%, var(--white) 100%);
+      border-bottom: 1px solid var(--gray-200);
+      text-align: center;
+    }
+    .hero-label {
+      font-size: .8rem; font-weight: 600; color: var(--green-600);
+      text-transform: uppercase; letter-spacing: .12em; margin-bottom: 1rem;
+    }
+    .hero-title {
+      font-size: 3rem; font-weight: 700; color: var(--gray-900);
+      margin-bottom: 1.2rem; line-height: 1.2;
+    }
+    .hero-title .hl { color: var(--green-600); }
+    .hero-desc { font-size: 1.05rem; color: var(--gray-700); margin-bottom: 2.5rem; }
+
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem; margin-top: .5rem;
+    }
+    .stat-card {
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: .65rem; padding: 1.8rem; text-align: center;
+      transition: all .3s;
+    }
+    .stat-card:hover { border-color: var(--green-300); box-shadow: 0 4px 12px rgba(22,163,74,.1); }
+    .stat-label { font-size: .88rem; color: var(--gray-600); margin-bottom: .4rem; }
+    .stat-value { font-size: 2.2rem; font-weight: 700; color: var(--green-600); }
+
+    /* ── Query Section ─────────────────────────────────────── */
+    .query-section { padding: 3.5rem 0; border-bottom: 1px solid var(--gray-200); }
+    .section-title {
+      font-size: 1.8rem; font-weight: 700; color: var(--gray-900);
+      margin-bottom: 2rem; text-align: center;
+    }
+    .query-card {
+      background: var(--gray-50); border: 1px solid var(--gray-200);
+      border-radius: .75rem; padding: 2.5rem;
+      max-width: 700px; margin: 0 auto;
+    }
+    .form-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .form-group { display: flex; flex-direction: column; gap: .4rem; }
+    .form-label { font-weight: 600; font-size: .92rem; color: var(--gray-700); }
+    .form-input, .form-select {
+      padding: .7rem 1rem; border: 1px solid var(--gray-200);
+      border-radius: .5rem; font-size: .95rem; font-family: inherit;
+      background: var(--white); color: var(--gray-900);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .form-input:focus, .form-select:focus {
+      outline: none; border-color: var(--green-600);
+      box-shadow: 0 0 0 3px rgba(22,163,74,.12);
+    }
+    .form-input:disabled { background: var(--gray-100); color: var(--gray-600); cursor: not-allowed; }
+
+    .btn {
+      width: 100%; padding: .85rem; border: none; border-radius: .5rem;
+      font-size: 1rem; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: all .25s;
+    }
+    .btn-primary { background: var(--green-600); color: var(--white); }
+    .btn-primary:hover:not(:disabled) { background: var(--green-700); box-shadow: 0 4px 14px rgba(22,163,74,.35); transform: translateY(-1px); }
+    .btn-primary:disabled { background: var(--gray-200); color: var(--gray-600); cursor: not-allowed; transform: none; }
+    .btn-loading::after { content: ' ...'; }
+
+    /* ── Results Section ───────────────────────────────────── */
+    .results-section { padding: 3.5rem 0; }
+    .results-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
+    }
+    .results-title { font-size: 1.4rem; font-weight: 700; color: var(--gray-900); }
+    .count-badge {
+      background: var(--green-100); color: var(--green-700);
+      padding: .35rem 1rem; border-radius: 9999px;
+      font-size: .9rem; font-weight: 600;
+    }
+
+    /* Table */
+    .table-wrapper {
+      overflow-x: auto; border: 1px solid var(--gray-200);
+      border-radius: .65rem;
+    }
+    table {
+      width: 100%; border-collapse: collapse;
+      font-size: .9rem;
+    }
+    thead { background: var(--green-50); }
+    thead th {
+      padding: .9rem 1rem; text-align: left;
+      font-weight: 600; color: var(--green-700);
+      border-bottom: 2px solid var(--green-200);
+      white-space: nowrap;
+    }
+    tbody tr { transition: background .15s; }
+    tbody tr:nth-child(even) { background: var(--gray-50); }
+    tbody tr:hover { background: var(--green-50); }
+    tbody td { padding: .8rem 1rem; color: var(--gray-700); border-bottom: 1px solid var(--gray-100); }
+    tbody td:last-child { border-bottom: none; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    /* Pagination */
+    .pagination {
+      display: flex; justify-content: center; align-items: center;
+      gap: 1rem; margin-top: 2rem;
+    }
+    .page-btn {
+      padding: .5rem 1.2rem; border: 1px solid var(--gray-200);
+      border-radius: .4rem; background: var(--white);
+      font-size: .9rem; font-weight: 500; cursor: pointer;
+      color: var(--gray-700); transition: all .2s;
+    }
+    .page-btn:hover:not(:disabled) { border-color: var(--green-600); color: var(--green-600); }
+    .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .page-info { font-size: .9rem; color: var(--gray-600); min-width: 80px; text-align: center; }
+
+    /* Empty / Error states */
+    .state-box {
+      text-align: center; padding: 4rem 2rem;
+      border: 1px dashed var(--gray-200); border-radius: .65rem;
+      color: var(--gray-600);
+    }
+    .state-box .state-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+    .state-box p { font-size: 1rem; }
+    .state-box.error { border-color: #fca5a5; background: var(--red-50); color: #b91c1c; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .hero-title { font-size: 2rem; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navbar ─────────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="nav-container">
+    <div class="nav-logo">門牌資料查詢系統</div>
+    <div class="nav-health">
+      <div class="health-dot" id="healthDot"></div>
+      <span id="healthText">確認連線中…</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Main ───────────────────────────────────────────────── -->
+<main class="container">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div>
+      <p class="hero-label">試題 2</p>
+      <h1 class="hero-title">台北市<br><span class="hl">門牌初編資料</span>查詢</h1>
+      <p class="hero-desc">內政部戶政司 · 民國 114 年 09 月 ～ 11 月</p>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <p class="stat-label">資料庫筆數</p>
+        <p class="stat-value" id="statTotal">—</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">已爬取行政區</p>
+        <p class="stat-value" id="statDistricts">—</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">API 版本</p>
+        <p class="stat-value">v1.0</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Query -->
+  <section class="query-section">
+    <h2 class="section-title">查詢門牌資料</h2>
+    <div class="query-card">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="cityInput">縣市</label>
+          <input class="form-input" id="cityInput" type="text" value="台北市" disabled />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="districtSelect">行政區</label>
+          <select class="form-select" id="districtSelect">
+            <option value="">── 請選擇行政區 ──</option>
+            <option>松山區</option>
+            <option>信義區</option>
+            <option>大安區</option>
+            <option>中山區</option>
+            <option>中正區</option>
+            <option>大同區</option>
+            <option>萬華區</option>
+            <option>文山區</option>
+            <option>南港區</option>
+            <option>內湖區</option>
+            <option>士林區</option>
+            <option>北投區</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="searchBtn" onclick="doSearch()">查詢</button>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section class="results-section" id="resultsSection" style="display:none">
+    <div class="results-header">
+      <h2 class="results-title" id="resultsTitle">查詢結果</h2>
+      <span class="count-badge" id="countBadge"></span>
+    </div>
+    <div id="resultsBody"></div>
+    <div class="pagination" id="pagination" style="display:none">
+      <button class="page-btn" id="prevBtn" onclick="changePage(-1)">← 上一頁</button>
+      <span class="page-info" id="pageInfo"></span>
+      <button class="page-btn" id="nextBtn" onclick="changePage(1)">下一頁 →</button>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  /* ── 設定 ────────────────────────────────────────────────── */
+  const API = '';          // 同 origin，空字串即可
+  const PAGE_SIZE = 50;    // 每頁筆數
+
+  let currentDistrict = '';
+  let currentOffset   = 0;
+  let totalRecords    = 0;
+
+  /* ── 健康檢查 ────────────────────────────────────────────── */
+  async function checkHealth() {
+    const dot  = document.getElementById('healthDot');
+    const text = document.getElementById('healthText');
+    try {
+      const res  = await fetch(`${API}/health`);
+      const data = await res.json();
+      if (data.status === 'ok' && data.db === 'connected') {
+        dot.className  = 'health-dot ok';
+        text.textContent = 'DB 連線正常';
+      } else {
+        dot.className  = 'health-dot err';
+        text.textContent = `DB 異常：${data.db}`;
+      }
+    } catch (e) {
+      dot.className  = 'health-dot err';
+      text.textContent = 'API 無法連線';
+    }
+  }
+
+  /* ── 載入統計 ────────────────────────────────────────────── */
+  async function loadStats() {
+    // 用中山區（最多筆）查詢取得總數
+    const districts = ['松山區','信義區','大安區','中山區','中正區','大同區','萬華區','文山區','南港區','內湖區','士林區','北投區'];
+    let total = 0, count = 0;
+    for (const d of districts) {
+      try {
+        const res  = await fetch(`${API}/query?limit=1&offset=0`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ city: '台北市', township: d })
+        });
+        const data = await res.json();
+        if (data.total > 0) { total += data.total; count++; }
+      } catch {}
+    }
+    document.getElementById('statTotal').textContent     = total.toLocaleString();
+    document.getElementById('statDistricts').textContent = `${count} / 12`;
+  }
+
+  /* ── 查詢 ────────────────────────────────────────────────── */
+  async function doSearch(offset = 0) {
+    const township = document.getElementById('districtSelect').value;
+    if (!township) { alert('請先選擇行政區'); return; }
+
+    currentDistrict = township;
+    currentOffset   = offset;
+
+    const btn = document.getElementById('searchBtn');
+    btn.disabled    = true;
+    btn.textContent = '查詢中…';
+
+    const section = document.getElementById('resultsSection');
+    section.style.display = 'block';
+    document.getElementById('resultsBody').innerHTML = '<div class="state-box"><div class="state-icon">⏳</div><p>載入中…</p></div>';
+    document.getElementById('pagination').style.display = 'none';
+
+    try {
+      const res  = await fetch(`${API}/query?limit=${PAGE_SIZE}&offset=${offset}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ city: '台北市', township })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      totalRecords = data.total;
+      renderResults(data, township);
+    } catch (e) {
+      document.getElementById('resultsBody').innerHTML =
+        `<div class="state-box error"><div class="state-icon">⚠️</div><p>查詢失敗：${e.message}</p></div>`;
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = '查詢';
+    }
+
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* ── 渲染結果 ─────────────────────────────────────────────── */
+  function renderResults(data, township) {
+    document.getElementById('resultsTitle').textContent =
+      `台北市 ${township} 查詢結果`;
+    document.getElementById('countBadge').textContent =
+      data.total > 0 ? `共 ${data.total.toLocaleString()} 筆` : '查無資料';
+
+    const body = document.getElementById('resultsBody');
+
+    if (data.total === 0) {
+      body.innerHTML = '<div class="state-box"><div class="state-icon">🔍</div><p>此行政區查無門牌初編資料</p></div>';
+      document.getElementById('pagination').style.display = 'none';
+      return;
+    }
+
+    const rows = data.data.map(r => `
+      <tr>
+        <td>${r.city}</td>
+        <td>${r.township}</td>
+        <td>${r.village ?? '—'}</td>
+        <td>${r.address}</td>
+        <td>${r.registration_date}</td>
+        <td>${r.registration_type}</td>
+      </tr>`).join('');
+
+    body.innerHTML = `
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>縣市</th>
+              <th>行政區</th>
+              <th>村里</th>
+              <th>門牌地址</th>
+              <th>編訂日期</th>
+              <th>編訂類別</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+
+    // 分頁
+    const totalPages = Math.ceil(data.total / PAGE_SIZE);
+    const curPage    = Math.floor(currentOffset / PAGE_SIZE) + 1;
+
+    if (totalPages > 1) {
+      document.getElementById('pagination').style.display = 'flex';
+      document.getElementById('pageInfo').textContent     = `${curPage} / ${totalPages} 頁`;
+      document.getElementById('prevBtn').disabled         = curPage <= 1;
+      document.getElementById('nextBtn').disabled         = curPage >= totalPages;
+    } else {
+      document.getElementById('pagination').style.display = 'none';
+    }
+  }
+
+  /* ── 翻頁 ────────────────────────────────────────────────── */
+  function changePage(dir) {
+    const newOffset = currentOffset + dir * PAGE_SIZE;
+    if (newOffset < 0 || newOffset >= totalRecords) return;
+    doSearch(newOffset);
+  }
+
+  /* ── 初始化 ───────────────────────────────────────────────── */
+  checkHealth();
+  loadStats();
+</script>
+</body>
+</html>

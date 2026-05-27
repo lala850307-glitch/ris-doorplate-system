@@ -1,0 +1,152 @@
+# ============================================================
+# 國泰產險 實機考試 - 地端 Docker Compose 設定
+# 一鍵啟動所有服務：資料庫、API、Log 監控
+name: ris-doorplate-system   # 明確指定專案名稱
+#
+# 使用方式：
+#   啟動監控 + API：docker-compose up -d postgres api loki promtail grafana
+#   啟動爬蟲排程：  docker-compose up crawler
+#   查看即時 log：  docker-compose logs -f crawler
+# ============================================================
+
+networks:
+  app-network:
+    driver: bridge     # 所有容器共用同一個內部網路，互相以 service 名稱溝通
+
+volumes:
+  postgres_data:       # PostgreSQL 資料持久化
+  grafana_data:        # Grafana 設定持久化
+  loki_data:           # Loki log 資料持久化（容器重啟後歷史 log 不遺失）
+
+services:
+
+  # ──────────────────────────────────────────────────────────
+  # PostgreSQL 資料庫
+  # 連線資訊由 .env 注入，方便地端/雲端切換
+  # ──────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${DB_NAME}
+      POSTGRES_USER:     ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"     # 本機也可以用 pgAdmin 直接連
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  # ──────────────────────────────────────────────────────────
+  # 爬蟲 + 排程服務（試題 1）
+  # depends_on service_healthy：等 PostgreSQL 完全就緒再啟動
+  # command 預設跑排程版本；若要手動跑一次可改 python crawler.py
+  # ──────────────────────────────────────────────────────────
+  crawler:
+    build:
+      context: ./試題1
+    container_name: crawler
+    restart: "no"       # 一次性任務，跑完即結束（不需 Docker 自動重啟）
+    depends_on:
+      postgres:
+        condition: service_healthy
+      loki:
+        condition: service_started
+      promtail:
+        condition: service_started
+    volumes:
+      - ./試題1/output:/app/output   # CSV 輸出掛載到本機，方便查看
+      - ./試題1/logs:/app/logs       # Log 檔案掛載到本機
+    env_file: .env
+    environment:
+      - DB_HOST=postgres  # Docker 內部用 service 名稱，覆寫 .env 的 localhost
+    # sleep 5：等 Promtail 連上 Loki，確保爬蟲 log 不遺失
+    command: sh -c "sleep 5 && python main.py"
+
+    networks:
+      - app-network
+
+  # ──────────────────────────────────────────────────────────
+  # FastAPI 查詢 API（試題 2）
+  # ──────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./試題2
+    container_name: api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"     # API：http://localhost:8000
+                        # Swagger：http://localhost:8000/docs
+    env_file: .env
+    environment:
+      - DB_HOST=postgres  # Docker 內部用 service 名稱，覆寫 .env 的 localhost
+    volumes:
+      - ./試題2/static:/app/static   # 掛載 HTML，修改後直接生效不需 rebuild
+    networks:
+      - app-network
+
+  # ──────────────────────────────────────────────────────────
+  # Loki — Log 儲存引擎（試題 3）
+  # ──────────────────────────────────────────────────────────
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./試題3/loki-config.yml:/etc/loki/local-config.yaml
+      - loki_data:/loki                              # log chunks 持久化
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - app-network
+
+  # ──────────────────────────────────────────────────────────
+  # Promtail — Docker container log 收集，推送至 Loki（試題 3）
+  # ──────────────────────────────────────────────────────────
+  promtail:
+    image: grafana/promtail:3.1.0   # 2.9.0 的 Docker API 太舊（1.42），3.x 支援 1.44+
+    container_name: promtail
+    restart: unless-stopped
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./試題3/promtail-config.yml:/etc/promtail/config.yml
+      - ./試題3/promtail-positions:/tmp/positions   # 讀取位置永久保存，重啟不重灌舊 log
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - app-network
+
+  # ──────────────────────────────────────────────────────────
+  # Grafana — Log 可視化儀表板（試題 3）
+  # 預設帳號密碼：admin / admin
+  # ──────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"     # Grafana：http://localhost:3000
+    volumes:
+      - ./試題3/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - loki
+    networks:
+      - app-network
