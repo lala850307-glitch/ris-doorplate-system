@@ -34,22 +34,22 @@
 
 ### Docker 執行（推薦）
 
-從根目錄一鍵啟動，爬蟲會自動執行：
+從根目錄啟動所有服務：
 
 ```bash
-docker compose up -d
+make local
 ```
 
-或單獨執行爬蟲：
+執行爬蟲（一次性，跑完自動停止）：
 
 ```bash
-docker compose up crawler
+make crawl
 ```
 
 ### 查看即時 log
 
 ```bash
-docker compose logs -f crawler
+make logs
 ```
 
 ---

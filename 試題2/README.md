@@ -24,10 +24,10 @@
 
 ### Docker 執行（推薦）
 
-從根目錄啟動：
+從根目錄啟動所有服務：
 
 ```bash
-docker compose up -d
+make local
 ```
 
 API 啟動後可透過以下方式存取：

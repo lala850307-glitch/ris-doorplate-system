@@ -29,7 +29,7 @@ Grafana（監控儀表板，Port 3000）
 從根目錄執行，監控服務會與其他服務一起啟動：
 
 ```bash
-docker compose up -d
+make local
 ```
 
 ---
@@ -119,7 +119,7 @@ docker compose up -d
 # 正確的完整清理方式（兩個必須一起做）
 docker rm -f crawler api
 docker compose stop loki promtail
-docker volume rm cathay-exam_loki_data
+docker volume rm ris-doorplate-system_loki_data
 rm -f 試題3/promtail-positions/positions.yaml
 docker compose up -d
 ```
