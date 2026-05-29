@@ -46,6 +46,9 @@ stop-local:	## 停止地端服務
 stop-cloud:	## 停止雲地服務
 	docker compose -f docker-compose.cloud.yml down
 
+pull:		## 雲地模式：從 GCS 下載 CSV，匯入地端 PostgreSQL
+	bash pull_from_gcs.sh
+
 stop:		## 停止全部服務
 	docker compose down
 	docker compose -f docker-compose.cloud.yml down

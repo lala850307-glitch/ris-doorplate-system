@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import shutil
 import sys
 import traceback
@@ -74,6 +75,11 @@ def main() -> None:
     shutil.rmtree(CAPTCHA_DIR, ignore_errors=True)
     logger.info("已清空舊驗證碼圖片")
 
+    # SKIP_DB=true → 雲地模式（DB 在地端，GCP 只輸出 CSV 到 GCS）
+    skip_db = os.getenv("SKIP_DB", "false").lower() == "true"
+    if skip_db:
+        logger.info("🌐 雲地模式：跳過 DB 寫入，爬完後上傳 CSV 至 GCS")
+
     logger.info("=" * 64)
     logger.info("開始執行門牌資料爬蟲")
     logger.info(f"目標：{TARGET_CITY} 各行政區（共 {len(TAIPEI_DISTRICTS)} 區）")
@@ -81,13 +87,14 @@ def main() -> None:
     logger.info(f"類別：{CATEGORY}")
     logger.info("=" * 64)
 
-    # 資料庫初始化
-    try:
-        init_db()
-    except Exception as e:
-        logger.critical(f"資料庫初始化失敗，程式中止：{e}")
-        send_notify(f"[🚨 爬蟲異常] 資料庫連線失敗：{e}")
-        return
+    # 資料庫初始化（地端模式才需要）
+    if not skip_db:
+        try:
+            init_db()
+        except Exception as e:
+            logger.critical(f"資料庫初始化失敗，程式中止：{e}")
+            send_notify(f"[🚨 爬蟲異常] 資料庫連線失敗：{e}")
+            return
 
     crawler          = DoorplateCrawler()
     all_records:      list = []
@@ -95,7 +102,7 @@ def main() -> None:
 
     for district, area_code in TAIPEI_DISTRICTS.items():
         logger.info(f"── 開始爬取：{TARGET_CITY} {district}")
-        log_id = log_start(district)
+        log_id = log_start(district) if not skip_db else None
 
         try:
             records = crawler.query_district(district, area_code)
@@ -104,23 +111,28 @@ def main() -> None:
             records = clean_records(records)
             all_records.extend(records)
 
-            # 每區完成立即寫入 DB（中途失敗也能保留已完成的資料）
-            saved = save_records(records)
-            logger.info(f"✓ {district} 完成，爬取 {len(records)} 筆，寫入 {saved} 筆")
-            log_finish(log_id, status="SUCCESS", record_count=len(records))
+            if not skip_db:
+                # 每區完成立即寫入 DB（中途失敗也能保留已完成的資料）
+                saved = save_records(records)
+                logger.info(f"✓ {district} 完成，爬取 {len(records)} 筆，寫入 {saved} 筆")
+                log_finish(log_id, status="SUCCESS", record_count=len(records))
+            else:
+                logger.info(f"✓ {district} 完成，爬取 {len(records)} 筆（雲地模式，不寫入 DB）")
 
         except KeyboardInterrupt:
-            log_finish(log_id, status="CANCELLED", error="使用者取消")
+            if not skip_db and log_id:
+                log_finish(log_id, status="CANCELLED", error="使用者取消")
             logger.warning("使用者取消，停止爬取")
             break
 
         except Exception as e:
             logger.error(f"✗ {district} 爬取失敗：{e}\n{traceback.format_exc()}")
-            log_finish(log_id, status="FAILED", error=str(e))
+            if not skip_db and log_id:
+                log_finish(log_id, status="FAILED", error=str(e))
             failed_districts.append(district)
             send_notify(f"[🚨 爬蟲異常] {district} 爬取失敗：{e}")
 
-    # CSV 落檔
+    # CSV 落檔（雲地模式會同時上傳 GCS）
     if all_records:
         csv_path = write_csv(all_records)
         logger.info(f"CSV 已儲存：{csv_path}（共 {len(all_records)} 筆）")
