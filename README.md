@@ -37,12 +37,12 @@
 
 **macOS / Linux：**
 ```bash
-cp .env.example .env
+cp .env.example 到 .env
 ```
 
 **Windows：**
 ```bat
-copy .env.example .env
+copy .env.example 到 .env
 ```
 
 `.env` 預設值即可直接使用，若需要 Email 異常通知，請填入 `MAIL_USER`、`MAIL_PASSWORD`、`MAIL_TO`。
