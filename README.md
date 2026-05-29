@@ -28,7 +28,6 @@
 ## 環境需求
 
 - Docker Desktop（需先啟動）
-- Make（macOS 內建，Windows 需另行安裝）
 
 ---
 
@@ -36,26 +35,49 @@
 
 **步驟 1**：建立環境設定檔
 
+**macOS / Linux：**
 ```bash
 cp .env.example .env
 ```
 
+**Windows：**
+```bat
+copy .env.example .env
+```
+
 `.env` 預設值即可直接使用，若需要 Email 異常通知，請填入 `MAIL_USER`、`MAIL_PASSWORD`、`MAIL_TO`。
+
+---
 
 **步驟 2**：一鍵啟動所有服務
 
+**macOS / Linux：**
 ```bash
 make local
 ```
+
+**Windows（不需安裝 Make，直接執行）：**
+```bat
+start.bat
+```
+或在檔案總管中直接雙擊 `start.bat`。
 
 啟動後會自動開啟：
 - 查詢介面 / Swagger UI → http://localhost:8000/docs
 - Grafana 監控儀表板 → http://localhost:3000（帳號 admin / 密碼 admin）
 
+---
+
 **步驟 3**：執行爬蟲（資料擷取）
 
+**macOS / Linux：**
 ```bash
 make crawl
+```
+
+**Windows：**
+```bat
+docker compose up crawler
 ```
 
 爬蟲為一次性任務，執行完畢後容器自動停止。
@@ -75,10 +97,7 @@ make crawl
 
 ## 常用指令
 
-```bash
-# 查看爬蟲即時 log
-make logs
-
-# 停止所有服務
-make stop
-```
+| 動作 | macOS / Linux | Windows |
+|------|--------------|---------|
+| 查看爬蟲 log | `make logs` | `docker compose logs -f crawler` |
+| 停止所有服務 | `make stop` | `docker compose down` |
