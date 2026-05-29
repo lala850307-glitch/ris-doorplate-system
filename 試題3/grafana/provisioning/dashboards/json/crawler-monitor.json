@@ -10,7 +10,7 @@
     {
       "id": 1,
       "type": "stat",
-      "title": "🚨 ERROR 次數（爬蟲+API）",
+      "title": "ERROR 次數（爬蟲+API）",
       "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
       "datasource": { "type": "loki", "uid": "loki" },
       "options": { "reduceOptions": { "calcs": ["last"] }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
@@ -33,7 +33,7 @@
     {
       "id": 2,
       "type": "stat",
-      "title": "⚠️ WARNING 次數（爬蟲+API）",
+      "title": "WARNING 次數（爬蟲+API）",
       "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
       "datasource": { "type": "loki", "uid": "loki" },
       "options": { "reduceOptions": { "calcs": ["last"] }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
@@ -56,7 +56,7 @@
     {
       "id": 3,
       "type": "stat",
-      "title": "✅ 爬蟲成功區數",
+      "title": "爬蟲成功區數",
       "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
       "datasource": { "type": "loki", "uid": "loki" },
       "options": { "reduceOptions": { "calcs": ["last"] }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
@@ -79,7 +79,7 @@
     {
       "id": 4,
       "type": "stat",
-      "title": "📡 API 查詢次數",
+      "title": "API 查詢次數",
       "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
       "datasource": { "type": "loki", "uid": "loki" },
       "options": { "reduceOptions": { "calcs": ["last"] }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
@@ -100,7 +100,7 @@
     {
       "id": 5,
       "type": "timeseries",
-      "title": "📈 爬蟲+API Log 量（每分鐘）",
+      "title": "爬蟲+API Log 量（每分鐘）",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 5 },
       "datasource": { "type": "loki", "uid": "loki" },
       "options": {
@@ -124,7 +124,7 @@
     {
       "id": 6,
       "type": "logs",
-      "title": "🕷 爬蟲 Log（crawler）",
+      "title": "爬蟲 Log（crawler）",
       "gridPos": { "h": 12, "w": 12, "x": 0, "y": 13 },
       "datasource": { "type": "loki", "uid": "loki" },
       "options": { "showTime": true, "showLabels": false, "wrapLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending" },
@@ -137,7 +137,7 @@
     {
       "id": 7,
       "type": "logs",
-      "title": "🚀 API Log（api）",
+      "title": "API Log（api）",
       "gridPos": { "h": 12, "w": 12, "x": 12, "y": 13 },
       "datasource": { "type": "loki", "uid": "loki" },
       "options": { "showTime": true, "showLabels": false, "wrapLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending" },
@@ -150,7 +150,7 @@
     {
       "id": 8,
       "type": "logs",
-      "title": "🚨 ERROR / WARNING Log（爬蟲+API）",
+      "title": "ERROR / WARNING Log（爬蟲+API）",
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 25 },
       "datasource": { "type": "loki", "uid": "loki" },
       "options": { "showTime": true, "showLabels": true, "wrapLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending" },
@@ -167,7 +167,7 @@
   "time": { "from": "now-30m", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "🏨 門牌爬蟲監控儀表板",
+  "title": "門牌爬蟲監控儀表板",
   "uid": "cathay-crawler-monitor",
   "version": 4
 }
