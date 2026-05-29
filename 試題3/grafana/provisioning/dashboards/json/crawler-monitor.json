@@ -5,7 +5,7 @@
   "graphTooltip": 1,
   "id": null,
   "links": [],
-  "liveNow": true,
+  "liveNow": false,
   "panels": [
     {
       "id": 1,
