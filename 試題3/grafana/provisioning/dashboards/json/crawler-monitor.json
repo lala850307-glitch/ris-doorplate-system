@@ -161,7 +161,7 @@
       }]
     }
   ],
-  "refresh": "10s",
+  "refresh": "30s",
   "schemaVersion": 38,
   "tags": ["crawler", "api", "loki"],
   "time": { "from": "now-30m", "to": "now" },
