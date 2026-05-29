@@ -186,6 +186,8 @@ flowchart TB
 
 ## 整體架構總覽
 
+### 全地端模式（`make local`）
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Docker Compose                           │
@@ -209,3 +211,59 @@ flowchart TB
                                     │
                           LINE Notify（對外通知）
 ```
+
+---
+
+## 圖 4：雲地並行架構（符合銀行法規）
+
+```mermaid
+flowchart TB
+    subgraph GCP雲端["☁️ GCP 雲端（運算層）"]
+        VM["🖥️ GCP VM e2-micro\nCrawler Container\nAPScheduler 每天 08:00"]
+        GCS["🪣 Cloud Storage\nris-doorplate-project-3d70850b\nresult.csv"]
+        CICD["⚙️ CI/CD\nGitHub Actions\n→ Docker Hub\nlayla8537/ris-crawler"]
+        SM["🔐 Secret Manager\ndb-password\nmail-password\n（概念展示）"]
+    end
+
+    subgraph OnPrem["🏦 地端（On-Premise）資料中心"]
+        CRON["⏰ Mac cron\n每天 09:00\nmake pull"]
+        PG[("🗄️ PostgreSQL\ndoor_plate_data\nDocker container\nPort 5432")]
+        API["⚡ FastAPI\nPort 8000\nSwagger UI"]
+        GF["📊 Grafana\nPort 3000\nLoki + Promtail"]
+    end
+
+    WEB["🌐 內政部戶政司\nris.gov.tw"]
+
+    VM -->|"3187筆 / 天\nrequests 直打 API"| WEB
+    WEB -->|"jqGrid JSON"| VM
+    VM -->|"SKIP_DB=true\n僅輸出 CSV"| GCS
+    GCS -->|"gcloud storage cp\nGCS Pull Model"| CRON
+    CRON -->|"psycopg2 INSERT\nON CONFLICT DO NOTHING"| PG
+    API -->|"SELECT WHERE\ncity AND township"| PG
+    CICD -->|"docker push\nauto build"| VM
+```
+
+---
+
+## 雲地並行設計說明
+
+### 為何符合銀行法規（金管會規範）
+
+| 規範要點 | 本架構做法 |
+|----------|-----------|
+| **資料不出境** | PostgreSQL 僅在地端，雲端無 DB |
+| **GCS Pull Model** | 地端主動拉取，雲端無法推送進行內網 |
+| **運算彈性** | 爬蟲在雲端彈性擴展，不佔用地端資源 |
+| **稽核追蹤** | GCS 保留 CSV 原始記錄，地端 DB 保留入庫紀錄 |
+| **金鑰管理** | Secret Manager 集中管理敏感憑證（不寫在程式碼） |
+
+### 兩種模式對照
+
+| 項目 | 全地端模式 | 雲地並行模式 |
+|------|-----------|------------|
+| 啟動指令 | `make local` | `make cloud` + GCP VM scheduler |
+| 爬蟲位置 | 本機 Docker | GCP VM Docker |
+| DB 位置 | 本機 PostgreSQL | **本機 PostgreSQL（不變）** |
+| API 位置 | 本機 Port 8000 | 本機 Port 8001 |
+| Grafana | Port 3000 | Port 3001 |
+| 資料同步 | 直接寫入 | GCS → `make pull` → 本機 DB |

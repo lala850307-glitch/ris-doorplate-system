@@ -42,6 +42,20 @@ crawler / api（stdout log）
 
 描述各容器的依賴關係與網路連接方式（app-network bridge）。
 
+### 圖 4：雲地並行架構（符合銀行法規）
+
+```
+☁️ GCP 雲端（運算層）
+    GCP VM → Crawler（SKIP_DB=true）→ GCS Bucket
+                                            ↓
+🏦 地端（On-Premise）
+    Mac cron（09:00）→ make pull → 本機 PostgreSQL
+    FastAPI（Port 8000/8001）← 查詢本機 PostgreSQL
+    Grafana（Port 3000/3001）← 監控本機服務
+```
+
+**設計重點：DB 永遠在地端，雲端只做運算，符合金管會規範。**
+
 ---
 
 ## 元件選型說明摘要
@@ -54,6 +68,8 @@ crawler / api（stdout log）
 | Log 收集 | Loki + Promtail | 比 ELK 輕量，Promtail 自動偵測 Docker 容器無需改程式碼 |
 | 異常通知 | Email（Gmail SMTP）| 通用、免費，使用 Python 內建 smtplib 無需額外套件 |
 | 排程 | APScheduler | 輕量，直接在 Python 程式內定義 cron，不需系統服務 |
+| 雲端儲存 | GCS | GCS Pull Model，地端主動拉取，雲端無法推送進入內網 |
+| CI/CD | GitHub Actions → Docker Hub | 自動建置推送，GCP VM 直接 docker pull 取得最新映像 |
 
 ---
 
