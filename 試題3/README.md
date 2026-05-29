@@ -117,11 +117,10 @@ make local
 
 ```bash
 # 正確的完整清理方式（兩個必須一起做）
-docker rm -f crawler api
-docker compose stop loki promtail
+make stop
 docker volume rm ris-doorplate-system_loki_data
 rm -f 試題3/promtail-positions/positions.yaml
-docker compose up -d
+make local
 ```
 
 > ⚠️ 只清 positions 不清 Loki（或反之），會導致 log 重複注入，造成儀表板數字異常。
