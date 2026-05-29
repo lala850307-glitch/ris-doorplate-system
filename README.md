@@ -1,5 +1,30 @@
 # RIS 門牌資料爬蟲系統
 
+## 各試題說明
+
+### 試題 1 — 門牌資料爬蟲 → [詳細說明](./試題1/README.md)
+
+爬取內政部戶政司網站，擷取台北市 12 個行政區的門牌初編資料（民國 114/09/01 ～ 114/11/30）。
+使用 requests 直接呼叫後端 API（不使用 Selenium），ddddocr 自動辨識驗證碼，失敗時切換人工輸入。
+資料清洗後寫入 PostgreSQL，同步輸出 CSV，APScheduler 每天 08:00 自動執行。
+
+### 試題 2 — FastAPI 查詢 API → [詳細說明](./試題2/README.md)
+
+提供 `POST /query` 介面，依縣市與行政區查詢門牌資料。
+內建 Swagger UI（`/docs`）與靜態查詢頁面（`/`），查詢結果為空時自動寄送 Email 通知。
+
+### 試題 3 — Log 監控 → [詳細說明](./試題3/README.md)
+
+使用 Grafana + Loki + Promtail 收集爬蟲與 API 的執行紀錄。
+`make local` 啟動後儀表板自動就緒，無需手動設定，支援歷史紀錄查詢。
+
+### 試題 4 — 系統架構圖 → [詳細說明](./試題4/README.md)
+
+包含全地端架構（`make local`）與雲地並行架構（GCP VM 爬取 + 地端 DB）兩種設計。
+雲地架構採 GCS Pull Model，資料庫永遠在地端，符合金管會對資料不出境的規範。
+
+---
+
 ## 環境需求
 
 - Docker Desktop（需先啟動）
@@ -57,28 +82,3 @@ make logs
 # 停止所有服務
 make stop
 ```
-
----
-
-## 各試題說明
-
-### 試題 1 — 門牌資料爬蟲 → [詳細說明](./試題1/README.md)
-
-爬取內政部戶政司網站，擷取台北市 12 個行政區的門牌初編資料（民國 114/09/01 ～ 114/11/30）。
-使用 requests 直接呼叫後端 API（不使用 Selenium），ddddocr 自動辨識驗證碼，失敗時切換人工輸入。
-資料清洗後寫入 PostgreSQL，同步輸出 CSV，APScheduler 每天 08:00 自動執行。
-
-### 試題 2 — FastAPI 查詢 API → [詳細說明](./試題2/README.md)
-
-提供 `POST /query` 介面，依縣市與行政區查詢門牌資料。
-內建 Swagger UI（`/docs`）與靜態查詢頁面（`/`），查詢結果為空時自動寄送 Email 通知。
-
-### 試題 3 — Log 監控 → [詳細說明](./試題3/README.md)
-
-使用 Grafana + Loki + Promtail 收集爬蟲與 API 的執行紀錄。
-`make local` 啟動後儀表板自動就緒，無需手動設定，支援歷史紀錄查詢。
-
-### 試題 4 — 系統架構圖 → [詳細說明](./試題4/README.md)
-
-包含全地端架構（`make local`）與雲地並行架構（GCP VM 爬取 + 地端 DB）兩種設計。
-雲地架構採 GCS Pull Model，資料庫永遠在地端，符合金管會對資料不出境的規範。
