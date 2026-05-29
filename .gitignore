@@ -1,5 +1,7 @@
 # ── 環境變數（含密碼，絕對不上傳）─────────────────────────────
 .env
+.env.local
+.env.cloud
 
 # ── Claude AI 專用背景知識檔（不需繳交）────────────────────────
 CLAUDE.md
@@ -11,6 +13,7 @@ CLAUDE.md
 
 # ── Promtail 讀取位置（本機狀態，不需版控）──────────────────────
 試題3/promtail-positions/
+試題3/promtail-positions-cloud/
 
 # ── Python 快取 ──────────────────────────────────────────────
 __pycache__/
