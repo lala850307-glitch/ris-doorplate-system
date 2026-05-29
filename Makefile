@@ -31,10 +31,12 @@ cloud:		## 雲地混合模式（DB 在 GCP，可與地端同時跑）
 	@echo "   Grafana → http://localhost:3001"
 
 crawl-local: ## 執行爬蟲（寫入地端 DB）
+	docker rm -f crawler 2>/dev/null; true
 	cp .env.local .env
 	docker compose up crawler
 
 crawl-cloud: ## 執行爬蟲（寫入 GCP DB，走 SSL）
+	docker rm -f crawler 2>/dev/null; true
 	cp .env.cloud .env
 	docker compose up crawler
 

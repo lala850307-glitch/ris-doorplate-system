@@ -65,8 +65,6 @@ services:
       - ./試題1/output:/app/output   # CSV 輸出掛載到本機，方便查看
       - ./試題1/logs:/app/logs       # Log 檔案掛載到本機
     env_file: .env
-    environment:
-      - DB_HOST=postgres  # Docker 內部用 service 名稱，覆寫 .env 的 localhost
     # sleep 5：等 Promtail 連上 Loki，確保爬蟲 log 不遺失
     command: sh -c "sleep 5 && python main.py"
 
@@ -88,8 +86,6 @@ services:
       - "8000:8000"     # API：http://localhost:8000
                         # Swagger：http://localhost:8000/docs
     env_file: .env
-    environment:
-      - DB_HOST=postgres  # Docker 內部用 service 名稱，覆寫 .env 的 localhost
     volumes:
       - ./試題2/static:/app/static   # 掛載 HTML，修改後直接生效不需 rebuild
     networks:
