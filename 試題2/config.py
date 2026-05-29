@@ -11,6 +11,7 @@ DB_CONFIG = {
     "dbname":   os.getenv("DB_NAME",     "crawldb"),
     "user":     os.getenv("DB_USER",     "admin"),
     "password": os.getenv("DB_PASSWORD", "admin123"),
+    "sslmode":  os.getenv("DB_SSLMODE",  "disable"),  # 地端=disable，雲地=require
 }
 
 # ── FastAPI 應用程式資訊 ──────────────────────────────────────
