@@ -83,8 +83,8 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "8000:8000"     # API：http://localhost:8000
-                        # Swagger：http://localhost:8000/docs
+      - "${API_PORT:-8000}:8000"     # API：http://localhost:8000
+                                     # Swagger：http://localhost:8000/docs
     env_file: .env
     volumes:
       - ./試題2/static:/app/static   # 掛載 HTML，修改後直接生效不需 rebuild
@@ -134,7 +134,7 @@ services:
     container_name: grafana
     restart: unless-stopped
     ports:
-      - "3000:3000"     # Grafana：http://localhost:3000
+      - "${GF_PORT:-3000}:3000"     # Grafana：http://localhost:3000
     volumes:
       - ./試題3/grafana/provisioning:/etc/grafana/provisioning
       - grafana_data:/var/lib/grafana
