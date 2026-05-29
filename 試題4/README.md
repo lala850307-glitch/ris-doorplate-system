@@ -20,7 +20,7 @@ APScheduler（每天 08:00）
     → 取得 jqGrid JSON 資料
     → db.py 寫入 PostgreSQL
     → csv_exporter.py 輸出 CSV
-    → notify.py 發送 Email 異常通知
+    → notify.py 發送 Email 異常通知（Gmail SMTP）
 
 FastAPI（api container）
     → 接收 POST /query 請求
@@ -66,7 +66,7 @@ crawler / api（stdout log）
 | API 框架 | FastAPI | ASGI 非同步、自動 Swagger UI、Pydantic 型別驗證 |
 | 資料庫 | PostgreSQL | 欄位固定的關聯式資料，支援索引查詢，官方 Docker 映像輕量 |
 | Log 收集 | Loki + Promtail | 比 ELK 輕量，Promtail 自動偵測 Docker 容器無需改程式碼 |
-| 異常通知 | Email（Gmail SMTP）| 通用、免費，使用 Python 內建 smtplib 無需額外套件 |
+| 異常通知 | Email（Gmail SMTP）| 通用、免費，Python 內建 smtplib，不需額外套件 |
 | 排程 | APScheduler | 輕量，直接在 Python 程式內定義 cron，不需系統服務 |
 | 雲端儲存 | GCS | GCS Pull Model，地端主動拉取，雲端無法推送進入內網 |
 | CI/CD | GitHub Actions → Docker Hub | 自動建置推送，GCP VM 直接 docker pull 取得最新映像 |

@@ -7,59 +7,59 @@
 ```mermaid
 flowchart TD
     subgraph 排程層
-        SCH["⏰ APScheduler\nscheduler.py\n每天 08:00 觸發"]
+        SCH["排程器\n每天 08:00 自動觸發爬蟲"]
     end
 
     subgraph 爬蟲層
-        CFG["⚙️ config.py\nURL / 查詢條件"]
-        CAP["🔍 captcha.py\nddddocr OCR 辨識"]
-        CRW["🕷️ crawler.py\nDoorplateCrawler\n純 requests，直打 API"]
-        DB1["🗄️ db.py\nPostgreSQL 操作"]
-        CSV["📄 csv_exporter.py\nresult.csv 落檔"]
-        MAIN["▶️ main.py\n進入點 / Logger"]
+        CFG["設定檔\n管理網址與查詢條件"]
+        CAP["驗證碼辨識\n自動辨識，失敗時切換人工輸入"]
+        CRW["爬蟲主體\n模擬瀏覽器請求，直接呼叫後端 API"]
+        DB1["資料庫模組\n負責寫入與查詢資料庫"]
+        CSV["CSV 輸出模組\n將資料輸出成 CSV 檔案"]
+        MAIN["主程式\n控制爬取流程，記錄執行紀錄"]
     end
 
     subgraph 外部資源
-        WEB["🌐 內政部戶政司\nris.gov.tw\n/inquiry/date API\n回傳 jqGrid JSON"]
+        WEB["內政部戶政司網站\n門牌資料查詢 API"]
     end
 
     subgraph 儲存層
-        CSVF["📄 output/result.csv"]
-        PG[("🗄️ PostgreSQL\ndoor_plate_data\nDocker container")]
+        CSVF["輸出的 CSV 檔案"]
+        PG[("資料庫\n儲存所有門牌資料")]
     end
 
     subgraph 查詢層
-        API["⚡ FastAPI\nmain.py\nPort 8000"]
+        API["查詢 API\n提供門牌資料查詢服務"]
     end
 
     subgraph 使用者
-        USR["👤 使用者 / 考官\ncurl / Swagger UI"]
+        USR["使用者 / 考官\n透過網頁或 API 查詢"]
     end
 
     subgraph 通知
-        LINE["📱 LINE Notify\nnotify.py"]
+        LINE["異常通知\n發生錯誤時自動寄送 Email"]
     end
 
-    SCH -->|"每天 08:00 呼叫 main()"| MAIN
+    SCH -->|"每天 08:00 自動觸發"| MAIN
     MAIN --> CFG
     MAIN --> DB1
     MAIN --> CSV
-    CFG -->|"URL / 參數"| CRW
-    MAIN -->|"query_district()"| CRW
-    CRW -->|"solve_auto()"| CAP
-    CRW -->|"3 步驟建立 session\nGET main → POST map → POST query"| WEB
-    WEB -->|"captchaKey + CSRF"| CRW
-    CRW -->|"POST /inquiry/date\n帶 captchaInput + captchaKey"| WEB
-    WEB -->|"jqGrid JSON\n{rows:[{cell:[地址,日期,類別]}]}"| CRW
-    CRW -->|"Record 列表"| MAIN
-    MAIN -->|"write_csv()"| CSVF
-    MAIN -->|"save_records()"| PG
-    USR -->|"POST /query\n{city, township}"| API
-    API -->|"SELECT WHERE\ncity AND township"| PG
-    PG -->|"查詢結果"| API
-    API -->|"JSON Response\n{count, data}"| USR
-    MAIN -->|"爬蟲失敗 / 警告"| LINE
-    API -->|"查詢結果為空"| LINE
+    CFG -->|"提供網址與查詢條件"| CRW
+    MAIN -->|"依序查詢各行政區"| CRW
+    CRW -->|"辨識驗證碼"| CAP
+    CRW -->|"建立查詢連線（三步驟取得安全 token）"| WEB
+    WEB -->|"回傳安全驗證 token"| CRW
+    CRW -->|"送出查詢條件與驗證碼"| WEB
+    WEB -->|"回傳查詢結果"| CRW
+    CRW -->|"整理後的資料列表"| MAIN
+    MAIN -->|"寫入 CSV 檔"| CSVF
+    MAIN -->|"寫入資料庫"| PG
+    USR -->|"送出查詢請求（城市 / 行政區）"| API
+    API -->|"查詢資料庫"| PG
+    PG -->|"回傳符合條件的資料"| API
+    API -->|"回傳查詢結果"| USR
+    MAIN -->|"爬蟲失敗時寄送通知"| LINE
+    API -->|"查無資料時寄送通知"| LINE
 ```
 
 ---
@@ -69,38 +69,38 @@ flowchart TD
 ```mermaid
 flowchart LR
     subgraph 應用服務
-        CRW["🕷️ Crawler\nstdout log\n格式：時間｜等級｜訊息"]
-        API["⚡ FastAPI API\nstdout log\n格式：時間｜等級｜訊息"]
+        CRW["爬蟲服務\n執行時輸出狀態紀錄"]
+        API["查詢 API 服務\n每次查詢都輸出紀錄"]
     end
 
     subgraph Log 收集
-        PT["📡 Promtail\npromtail-config.yml\n掛載 Docker socket\n自動收集所有容器 log"]
+        PT["Log 收集器\n自動抓取所有容器的執行紀錄"]
     end
 
     subgraph Log 儲存
-        LK["🗃️ Loki\nloki-config.yml\n儲存於 /loki/chunks\nPort 3100"]
+        LK["Log 儲存引擎\n集中存放所有執行紀錄"]
     end
 
     subgraph 可視化
-        GF["📊 Grafana\nPort 3000\n自動載入儀表板\n爬蟲 / API / 異常 3 個面板\n歷史紀錄可指定時間範圍"]
+        GF["監控儀表板\n視覺化呈現紀錄\n可查詢任意時間範圍的歷史資料"]
     end
 
     subgraph 異常通知
-        LINE["📱 LINE Notify\n即時推播\n爬蟲異常 / 查詢為空"]
+        LINE["異常通知\n自動寄送 Email"]
     end
 
     subgraph 觀測者
-        OPS["👤 維運人員 / 考官\nhttp://localhost:3000"]
+        OPS["維運人員 / 考官\n查看監控畫面"]
     end
 
-    CRW -->|"stdout"| PT
-    API -->|"stdout"| PT
-    PT -->|"HTTP Push\n/loki/api/v1/push"| LK
-    LK -->|"LogQL 查詢"| GF
-    GF -->|"儀表板 / 歷史搜尋"| OPS
-    CRW -->|"ERROR / CRITICAL"| LINE
-    API -->|"WARNING（查無資料）"| LINE
-    LINE -->|"LINE App 推播"| OPS
+    CRW -->|"輸出執行紀錄"| PT
+    API -->|"輸出執行紀錄"| PT
+    PT -->|"推送 log 至儲存引擎"| LK
+    LK -->|"查詢 log 資料"| GF
+    GF -->|"顯示儀表板與歷史紀錄"| OPS
+    CRW -->|"發生錯誤時觸發通知"| LINE
+    API -->|"查無資料時觸發通知"| LINE
+    LINE -->|"Gmail 寄信通知"| OPS
 ```
 
 ---
@@ -110,15 +110,15 @@ flowchart LR
 ```mermaid
 flowchart TB
     subgraph docker-compose
-        PG["🗄️ postgres\nPort 5432\nhealthcheck 確認就緒"]
-        CRW["🕷️ crawler\n試題1\ndepends_on: postgres"]
-        API["⚡ api\n試題2\nPort 8000\ndepends_on: postgres"]
-        LK["🗃️ loki\n試題3\nPort 3100"]
-        PT["📡 promtail\n試題3\ndepends_on: loki"]
-        GF["📊 grafana\n試題3\nPort 3000\ndepends_on: loki"]
+        PG["資料庫\n其他服務啟動前需等待就緒"]
+        CRW["爬蟲服務\n資料庫就緒後才啟動"]
+        API["查詢 API\n資料庫就緒後才啟動"]
+        LK["Log 儲存引擎\n接收並儲存所有紀錄"]
+        PT["Log 收集器\nLog 儲存引擎就緒後才啟動"]
+        GF["監控儀表板\nLog 儲存引擎就緒後才啟動"]
     end
 
-    NET["🔗 app-network\nbridge（容器間以 service 名稱互通）"]
+    NET["內部網路\n所有容器透過此網路互相溝通"]
 
     PG --- NET
     CRW --- NET
@@ -127,10 +127,10 @@ flowchart TB
     PT --- NET
     GF --- NET
 
-    CRW -->|"等 DB 就緒"| PG
-    API -->|"等 DB 就緒"| PG
-    PT -->|"push log"| LK
-    GF -->|"LogQL 查詢"| LK
+    CRW -->|"等資料庫就緒後才啟動"| PG
+    API -->|"等資料庫就緒後才啟動"| PG
+    PT -->|"推送 log"| LK
+    GF -->|"查詢 log"| LK
 ```
 
 ---
@@ -174,13 +174,13 @@ flowchart TB
 | **開箱即用** | Grafana datasource 與儀表板全部自動 Provisioning，`docker-compose up` 後直接看到監控畫面 |
 | **歷史查詢** | Grafana 右上角選時間範圍，可回查指定日期的爬蟲執行紀錄 |
 
-### 異常通知：LINE Notify
+### 異常通知：Email（Gmail SMTP）
 
 | 考量 | 說明 |
 |------|------|
-| **台灣普及率** | LINE 在台灣使用率極高，維運人員幾乎都有帳號，不需額外安裝 App |
-| **免費無限量** | 個人 Token 無訊息數量限制 |
-| **容錯設計** | Token 留空時程式不中斷，只印 WARNING log；通知失敗也不影響主流程 |
+| **通用性** | Email 為最通用的通知管道，不需安裝額外 App，收件人帳號即可 |
+| **免費** | Gmail SMTP 免費，使用 App Password 驗證，無需額外套件（Python 內建 smtplib）|
+| **容錯設計** | 環境變數未設定時程式不中斷，只印 WARNING log；通知失敗也不影響主流程 |
 
 ---
 
@@ -209,7 +209,7 @@ flowchart TB
 │  └──────────────────┘    └───────────────┘    └─────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
                                     │
-                          LINE Notify（對外通知）
+                          Email 異常通知（Gmail SMTP）
 ```
 
 ---
@@ -218,29 +218,29 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    subgraph GCP雲端["☁️ GCP 雲端（運算層）"]
-        VM["🖥️ GCP VM e2-micro\nCrawler Container\nAPScheduler 每天 08:00"]
-        GCS["🪣 Cloud Storage\nris-doorplate-project-3d70850b\nresult.csv"]
-        CICD["⚙️ CI/CD\nGitHub Actions\n→ Docker Hub\nlayla8537/ris-crawler"]
-        SM["🔐 Secret Manager\ndb-password\nmail-password\n（概念展示）"]
+    subgraph GCP雲端["GCP 雲端（運算層）"]
+        VM["雲端虛擬機\n每天 08:00 自動執行爬蟲\n不寫入資料庫，只輸出 CSV"]
+        GCS["雲端儲存桶\n存放爬蟲產出的 CSV 檔"]
+        CICD["自動部署流程\n推送程式碼後自動打包映像\n更新雲端爬蟲至最新版本"]
+        SM["密碼保管庫\n集中管理敏感憑證\n（概念展示，未實作）"]
     end
 
-    subgraph OnPrem["🏦 地端（On-Premise）資料中心"]
-        CRON["⏰ Mac cron\n每天 09:00\nmake pull"]
-        PG[("🗄️ PostgreSQL\ndoor_plate_data\nDocker container\nPort 5432")]
-        API["⚡ FastAPI\nPort 8000\nSwagger UI"]
-        GF["📊 Grafana\nPort 3000\nLoki + Promtail"]
+    subgraph OnPrem["地端（資料中心）"]
+        CRON["排程任務\n每天 09:00\n主動從雲端拉取 CSV"]
+        PG[("資料庫\nPostgreSQL\n永遠在地端，不上雲")]
+        API["查詢 API\nFastAPI Port 8000\n提供門牌查詢介面"]
+        GF["監控儀表板\nGrafana Port 3000\n查看爬蟲與 API 紀錄"]
     end
 
-    WEB["🌐 內政部戶政司\nris.gov.tw"]
+    WEB["內政部戶政司\n門牌資料來源"]
 
-    VM -->|"3187筆 / 天\nrequests 直打 API"| WEB
-    WEB -->|"jqGrid JSON"| VM
-    VM -->|"SKIP_DB=true\n僅輸出 CSV"| GCS
-    GCS -->|"gcloud storage cp\nGCS Pull Model"| CRON
-    CRON -->|"psycopg2 INSERT\nON CONFLICT DO NOTHING"| PG
-    API -->|"SELECT WHERE\ncity AND township"| PG
-    CICD -->|"docker push\nauto build"| VM
+    VM -->|"每天抓取 3187 筆資料"| WEB
+    WEB -->|"回傳 JSON 查詢結果"| VM
+    VM -->|"不寫入資料庫\n只輸出 CSV 存至雲端"| GCS
+    GCS -->|"地端主動拉取\n雲端無法推送進內網"| CRON
+    CRON -->|"匯入資料庫\n重複資料自動略過"| PG
+    API -->|"查詢門牌資料"| PG
+    CICD -->|"程式碼更新後\n自動部署新版本至雲端"| VM
 ```
 
 ---
